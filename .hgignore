@@ -2,7 +2,7 @@
 ^lklsocks$
 
 ^configure(.ac)?$
-^config.(log|status)$
+^config.(log|status|guess|sub)$
 ^aclocal.m4$
 ^depcomp$
 ^install-sh$
@@ -11,6 +11,11 @@
 ^Makefile(.in)?$
 /.deps/
 .dirstamp$
+libtool$
+ltmain.sh$
+compile$
+m4/
+
 
 ^.c?project
 ^.autotools
