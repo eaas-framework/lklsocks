@@ -1,7 +1,7 @@
 .o$
 ^lklsocks$
 
-^configure(.ac)?$
+^configure$
 ^config.(log|status|guess|sub)$
 ^aclocal.m4$
 ^depcomp$
