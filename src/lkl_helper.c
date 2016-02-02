@@ -1,12 +1,15 @@
 #include <stdio.h>
+#include <arpa/inet.h>
 
 #include <lkl.h>
 #include <lkl_host.h>
 
+#include "lkl_helper.h"
+
 struct lkl_netdev *nuse_vif_vde_create(const char *switch_);
 extern struct lkl_dev_net_ops vde_net_ops;
 
-void init_lkl(size_t mem, char *cmd) {
+void init_lkl(size_t mem, char const *cmd) {
     int ret = 0;
     struct lkl_netdev *nd = nuse_vif_vde_create("/tmp/vde");
     struct lkl_dev_net_ops *nd_ops = &vde_net_ops;

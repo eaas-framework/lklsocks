@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-void init_lkl(size_t mem, char *cmd);
+void init_lkl(size_t mem, char const *cmd);
 void halt_lkl(void);
 
 #ifdef __cplusplus
