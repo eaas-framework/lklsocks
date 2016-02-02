@@ -1,23 +1,23 @@
-.o$
+\.o$
 ^lklsocks$
 
 ^configure$
-^config.(log|status|guess|sub)$
-^aclocal.m4$
+^config\.(log|status|guess|sub)$
+^aclocal\.m4$
 ^depcomp$
 ^install-sh$
 ^missing$
-^autom4te.cache/
-^Makefile(.in)?$
-/.deps/
-.dirstamp$
+^autom4te\.cache/
+^Makefile(\.in)?$
+/\.deps/
+\.dirstamp$
 libtool$
-ltmain.sh$
+ltmain\.sh$
 compile$
 m4/
 
 
-^.c?project
-^.autotools
-^.settings/
+^\.c?project
+^\.autotools
+^\.settings/
 
