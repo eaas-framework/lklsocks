@@ -38,6 +38,11 @@ void init_lkl(size_t mem, char const *cmd) {
         fprintf(stderr, "LKL: Failed to configure network interface %d: %s\n", ifindex, lkl_strerror(ret));
         return;
     }
+    ret = lkl_if_up(ifindex);
+    if (ret < 0) {
+        fprintf(stderr, "LKL: Failed to set link state up for network interface %d: %s\n", ifindex, lkl_strerror(ret));
+        return;
+    }
 }
 
 void halt_lkl() {
