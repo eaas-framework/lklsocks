@@ -10,6 +10,8 @@ AC_PROG_LIBTOOL
 AC_PROG_CXX
 AC_PROG_CC
 
+AX_CXX_COMPILE_STDCXX_11()
+
 LIBS="-lpthread -lrt -ldl \
 		 -lrte_pmd_vmxnet3_uio -lrte_timer -lrte_hash \
 		 -lrte_mbuf -lethdev -lrte_eal -lrte_mempool \

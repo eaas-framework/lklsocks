@@ -30,6 +30,8 @@ namespace lkl {
 namespace asio {
 
 using boost::asio::socket_base;
+using std::enable_if;
+using std::is_convertible;
 
 
 /// Default service implementation for a stream socket.
