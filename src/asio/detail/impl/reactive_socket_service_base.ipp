@@ -153,12 +153,14 @@ boost::system::error_code reactive_socket_service_base::do_open(
   if (sock.get() == invalid_socket)
     return ec;
 
+/*
   if (int err = reactor_.register_descriptor(sock.get(), impl.reactor_data_))
   {
     ec = boost::system::error_code(err,
         boost::asio::error::get_system_category());
     return ec;
   }
+*/
 
   impl.socket_ = sock.release();
   switch (type)
