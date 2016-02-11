@@ -1,13 +1,16 @@
 #ifndef SOCKSCONNECTION_H_
 #define SOCKSCONNECTION_H_
 
-#include <boost/asio/ip/tcp.hpp>
 #include <memory>
+#include <thread>
+#include <list>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/spawn.hpp>
 
 #include "src/asio/stream_socket_service.hpp"
 #include "asio/ip/tcp.hpp"
 
-class SocksConnection {
+class SocksConnection : public std::enable_shared_from_this<SocksConnection> {
 public:
     typedef std::shared_ptr<SocksConnection> ptr_t;
 
@@ -26,6 +29,12 @@ protected:
     boost::asio::ip::tcp::socket hostSocket;
     lkl::asio::ip::tcp::socket remoteSocket;
 
+    std::thread hostThread;
+    std::thread remoteThread;
+
+    void handshake();
+    void receiveRemote();
+    void receiveHost();
     SocksConnection(boost::asio::io_service &io_service);
 };
 
