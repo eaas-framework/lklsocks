@@ -61,6 +61,20 @@ void SocksConnection::start() {
     this->hostThread = std::move(std::thread(std::bind(&SocksConnection::handshake, this)));
 }
 
+void SocksConnection::teardown() {
+    this->mutex.lock();
+    if (this->remoteSocket.is_open()) {
+        this->remoteSocket.shutdown(asio::ip::tcp::socket::shutdown_both);
+        this->remoteSocket.close();
+    }
+    if (this->hostSocket.is_open()) {
+        this->hostSocket.shutdown(asio::ip::tcp::socket::shutdown_both);
+        this->hostSocket.close();
+    }
+    std::cout << "Connection closed." << std::endl;
+    this->mutex.unlock();
+}
+
 void SocksConnection::handshake() {
     Socks4Request request;
     asio::streambuf userdata;
@@ -78,6 +92,7 @@ void SocksConnection::handshake() {
     boost::system::error_code ec;
     this->remoteSocket.connect(endpoint, ec);
     if (ec) {
+        std::cout << "Connection error: " << ec << std::endl;
         this->remoteSocket.close();
 
         Socks4Response response { SocksReplyVersion::REPLY_SOCKS4,
@@ -104,12 +119,20 @@ void SocksConnection::handshake() {
 
 void SocksConnection::receiveRemote() {
     std::array<char, 1500> buf;
+    boost::system::error_code ec;
     while (true) {
         // LKL currently does not support SMP and one pending syscall
         // will block all further syscalls, so don't to blocking reads!
-        while (this->remoteSocket.available() == 0) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        while (this->remoteSocket.receive(
+                asio::buffer(buf),
+                asio::socket_base::message_peek | MSG_DONTWAIT, ec) == 0) {
+            if (ec == boost::asio::error::eof) {
+                this->teardown();
+                return;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(300));
         }
+
         size_t length = this->remoteSocket.read_some(asio::buffer(buf));
         asio::write(this->hostSocket, asio::buffer(buf, length));
 
@@ -118,8 +141,13 @@ void SocksConnection::receiveRemote() {
 
 void SocksConnection::receiveHost() {
     std::array<char, 1500> buf;
+    boost::system::error_code ec;
     while (true) {
-        size_t length = this->hostSocket.read_some(asio::buffer(buf));
+        size_t length = this->hostSocket.read_some(asio::buffer(buf), ec);
+        if (ec == boost::asio::error::eof) {
+            this->teardown();
+            return;
+        }
         asio::write(this->remoteSocket, asio::buffer(buf, length));
     }
 }

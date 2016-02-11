@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <thread>
+#include <mutex>
 #include <list>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
@@ -25,12 +26,14 @@ public:
     }
 
     void start();
+    void teardown();
 protected:
     boost::asio::ip::tcp::socket hostSocket;
     lkl::asio::ip::tcp::socket remoteSocket;
 
     std::thread hostThread;
     std::thread remoteThread;
+    std::mutex mutex;
 
     void handshake();
     void receiveRemote();
