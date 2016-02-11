@@ -9,9 +9,9 @@
 struct lkl_netdev *nuse_vif_vde_create(const char *switch_);
 extern struct lkl_dev_net_ops vde_net_ops;
 
-void init_lkl(size_t mem, char const *cmd) {
+void init_lkl(size_t mem, char const *cmd, char const * const vde_path) {
     int ret = 0;
-    struct lkl_netdev *nd = nuse_vif_vde_create("/tmp/vde");
+    struct lkl_netdev *nd = nuse_vif_vde_create(vde_path);
     struct lkl_dev_net_ops *nd_ops = &vde_net_ops;
 
 
