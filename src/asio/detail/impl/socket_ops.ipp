@@ -825,14 +825,16 @@ size_t sync_recv(socket_type s, state_type state, buf* bufs,
       return bytes;
 
     // Check for EOF.
-    if ((state & stream_oriented) && bytes == 0)
+    if ((state & stream_oriented) && bytes == 0
+        && (ec != boost::asio::error::would_block
+          && ec != boost::asio::error::try_again))
     {
       ec = boost::asio::error::eof;
       return 0;
     }
 
     // Operation failed.
-    if ((state & user_set_non_blocking)
+    if (((state & user_set_non_blocking) || flags & MSG_DONTWAIT)
         || (ec != boost::asio::error::would_block
           && ec != boost::asio::error::try_again))
       return 0;
