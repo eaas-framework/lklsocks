@@ -31,6 +31,7 @@ void SocksServer::startAccept() {
 
 void SocksServer::handleAccept(SocksConnection::ptr_t connection, boost::system::error_code const &error) {
     if (!error) {
+        this->connections.push_back(connection);
         connection->start();
     }
     this->startAccept();

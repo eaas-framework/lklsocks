@@ -1,6 +1,7 @@
 #ifndef SOCKSSERVER_H_
 #define SOCKSSERVER_H_
 
+#include <list>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
@@ -13,6 +14,7 @@ public:
 
 protected:
     boost::asio::ip::tcp::acceptor acceptor;
+    std::list<SocksConnection::ptr_t> connections;
 
     void startAccept();
     void handleAccept(SocksConnection::ptr_t connection, boost::system::error_code const &error);
