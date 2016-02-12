@@ -130,7 +130,7 @@ void SocksConnection::receiveRemote() {
                 this->teardown();
                 return;
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(300));
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
 
         size_t length = this->remoteSocket.read_some(asio::buffer(buf));
