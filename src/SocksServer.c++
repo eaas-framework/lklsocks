@@ -10,10 +10,9 @@ namespace asio = boost::asio;
 
 SocksServer::SocksServer(unsigned short port,
                          asio::io_service &io_service) :
-        acceptor(io_service,
-                 asio::ip::tcp::endpoint(asio::ip::tcp::v4(),
-                                                port))
-{
+        io_service(io_service),
+        acceptor(io_service, asio::ip::tcp::endpoint(asio::ip::tcp::v4(),
+                                                     port)) {
     this->startAccept();
 }
 
@@ -26,8 +25,15 @@ SocksServer::~SocksServer() {
     }
 }
 
+void SocksServer::stopConnection(SocksConnection::ptr_t const &conn) {
+    // make sure this is only called from the "main" thread
+    this->io_service.post([=]() {
+        this->connections.remove(conn);
+    });
+}
+
 void SocksServer::startAccept() {
-    SocksConnection::ptr_t connection = SocksConnection::create(this->acceptor.get_io_service());
+    SocksConnection::ptr_t connection = SocksConnection::create(this->acceptor.get_io_service(), *this);
 
     this->acceptor.async_accept(
             connection->getHostSocket(),

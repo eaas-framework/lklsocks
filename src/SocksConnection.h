@@ -11,12 +11,14 @@
 #include "src/asio/stream_socket_service.hpp"
 #include "asio/ip/tcp.hpp"
 
+class SocksServer;
+
 class SocksConnection : public std::enable_shared_from_this<SocksConnection> {
 public:
     typedef std::shared_ptr<SocksConnection> ptr_t;
 
-    static ptr_t create(boost::asio::io_service &io_service) {
-        return ptr_t(new SocksConnection(io_service));
+    static ptr_t create(boost::asio::io_service &io_service, SocksServer &server) {
+        return ptr_t(new SocksConnection(io_service, server));
     }
 
     virtual ~SocksConnection();
@@ -26,7 +28,6 @@ public:
     }
 
     void start();
-    void teardown();
 protected:
     boost::asio::ip::tcp::socket hostSocket;
     lkl::asio::ip::tcp::socket remoteSocket;
@@ -35,10 +36,12 @@ protected:
     std::thread remoteThread;
     std::mutex mutex;
 
+    SocksServer &server;
+
     void handshake();
     void receiveRemote();
     void receiveHost();
-    SocksConnection(boost::asio::io_service &io_service);
+    SocksConnection(boost::asio::io_service &io_service, SocksServer &server);
 };
 
 #endif /* SOCKSCONNECTION_H_ */

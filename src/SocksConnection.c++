@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 
 #include "src/asio/stream_socket_service.hpp"
+#include "SocksServer.h"
 
 namespace asio = boost::asio;
 
@@ -48,20 +49,12 @@ struct Socks4Response {
 };
 
 
-SocksConnection::SocksConnection(boost::asio::io_service &io_service) :
-        hostSocket(io_service), remoteSocket(io_service) {
+SocksConnection::SocksConnection(boost::asio::io_service &io_service,
+                                 SocksServer &server) :
+        hostSocket(io_service), remoteSocket(io_service), server(server) {
 }
 
-SocksConnection::~SocksConnection()
-{
-}
-
-void SocksConnection::start() {
-    // start host connection thread
-    this->hostThread = std::move(std::thread(std::bind(&SocksConnection::handshake, this)));
-}
-
-void SocksConnection::teardown() {
+SocksConnection::~SocksConnection() {
     this->mutex.lock();
     if (this->remoteSocket.is_open()) {
         this->remoteSocket.shutdown(asio::ip::tcp::socket::shutdown_both);
@@ -71,8 +64,20 @@ void SocksConnection::teardown() {
         this->hostSocket.shutdown(asio::ip::tcp::socket::shutdown_both);
         this->hostSocket.close();
     }
-    std::cout << "Connection closed." << std::endl;
     this->mutex.unlock();
+
+    if (this->hostThread.joinable()) {
+        this->hostThread.join();
+    }
+    if (this->remoteThread.joinable()) {
+        this->remoteThread.join();
+    }
+    std::cout << "delete connection" << std::endl;
+}
+
+void SocksConnection::start() {
+    // start host connection thread
+    this->hostThread = std::move(std::thread(std::bind(&SocksConnection::handshake, this)));
 }
 
 void SocksConnection::handshake() {
@@ -126,8 +131,16 @@ void SocksConnection::receiveRemote() {
         while (this->remoteSocket.receive(
                 asio::buffer(buf),
                 asio::socket_base::message_peek | MSG_DONTWAIT, ec) == 0) {
-            if (ec == boost::asio::error::eof) {
-                this->teardown();
+            if (ec == boost::asio::error::eof || ec == boost::asio::error::bad_descriptor) {
+                try {
+                    this->server.stopConnection(this->shared_from_this());
+                } catch (std::bad_weak_ptr &e) {
+                    // ignore this exception: if we cannot call shared_from_this(),
+                    // the connection's d'tor is already running (or about to)
+                    // and there is no point in stopping the connection again.
+                    // shared_from_this() is still, however, the most convenient
+                    // way to pass "this" to stopConnection
+                }
                 return;
             }
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -135,7 +148,6 @@ void SocksConnection::receiveRemote() {
 
         size_t length = this->remoteSocket.read_some(asio::buffer(buf));
         asio::write(this->hostSocket, asio::buffer(buf, length));
-
     }
 }
 
@@ -145,7 +157,15 @@ void SocksConnection::receiveHost() {
     while (true) {
         size_t length = this->hostSocket.read_some(asio::buffer(buf), ec);
         if (ec == boost::asio::error::eof) {
-            this->teardown();
+            try {
+                this->server.stopConnection(this->shared_from_this());
+            } catch (std::bad_weak_ptr &e) {
+                // ignore this exception: if we cannot call shared_from_this(),
+                // the connection's d'tor is already running (or about to)
+                // and there is no point in stopping the connection again.
+                // shared_from_this() is still, however, the most convenient
+                // way to pass "this" to stopConnection
+            }
             return;
         }
         asio::write(this->remoteSocket, asio::buffer(buf, length));
