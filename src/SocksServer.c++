@@ -1,5 +1,6 @@
 #include "SocksServer.h"
 
+#include <iostream>
 #include <boost/bind.hpp>
 #include <boost/asio/placeholders.hpp>
 
@@ -16,8 +17,13 @@ SocksServer::SocksServer(unsigned short port,
     this->startAccept();
 }
 
-SocksServer::~SocksServer()
-{
+SocksServer::~SocksServer() {
+    try {
+        this->acceptor.cancel();
+        this->acceptor.close();
+    } catch (std::exception &e) {
+        std::cerr << "Error closing listening socket: " << e.what() << std::endl;
+    }
 }
 
 void SocksServer::startAccept() {

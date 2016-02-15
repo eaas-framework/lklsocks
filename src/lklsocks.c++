@@ -44,10 +44,19 @@ int main(int argc, char *argv[]) {
     init_lkl(LKL_MEMORY_SIZE, "", config->at("socket").as<std::string>().c_str());
 
     boost::asio::io_service io_service;
+    boost::asio::signal_set signals(io_service);
+    signals.add(SIGINT);
+    signals.add(SIGTERM);
+    signals.add(SIGQUIT);
+    signals.async_wait([&](boost::system::error_code const &error, int signal_number) {
+        io_service.stop();
+    });
 
-    SocksServer server(config->at("port").as<int>(), io_service);
+    {
+        SocksServer server(config->at("port").as<int>(), io_service);
 
-    io_service.run();
+        io_service.run();
+    }
 
     halt_lkl();
 
