@@ -86,10 +86,10 @@ void reactive_socket_service_base::destroy(
   if (impl.socket_ != invalid_socket)
   {
     BOOST_ASIO_HANDLER_OPERATION(("socket", &impl, "close"));
-
+/*
     reactor_.deregister_descriptor(impl.socket_, impl.reactor_data_,
         (impl.state_ & socket_ops::possible_dup) == 0);
-
+*/
     boost::system::error_code ignored_ec;
     socket_ops::close(impl.socket_, impl.state_, true, ignored_ec);
   }
@@ -102,9 +102,10 @@ boost::system::error_code reactive_socket_service_base::close(
   if (is_open(impl))
   {
     BOOST_ASIO_HANDLER_OPERATION(("socket", &impl, "close"));
-
+/*
     reactor_.deregister_descriptor(impl.socket_, impl.reactor_data_,
         (impl.state_ & socket_ops::possible_dup) == 0);
+*/
   }
 
   socket_ops::close(impl.socket_, impl.state_, false, ec);
@@ -183,7 +184,7 @@ boost::system::error_code reactive_socket_service_base::do_assign(
     ec = boost::asio::error::already_open;
     return ec;
   }
-
+/*
   if (int err = reactor_.register_descriptor(
         native_socket, impl.reactor_data_))
   {
@@ -191,7 +192,7 @@ boost::system::error_code reactive_socket_service_base::do_assign(
         boost::asio::error::get_system_category());
     return ec;
   }
-
+*/
   impl.socket_ = native_socket;
   switch (type)
   {
