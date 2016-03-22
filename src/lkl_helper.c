@@ -44,3 +44,11 @@ void init_lkl(size_t mem, char const *cmd, char const * const vde_path) {
 void halt_lkl() {
     lkl_sys_halt();
 }
+
+int lkl_thread_start() {
+    return lkl_create_syscall_thread();
+}
+
+int lkl_thread_stop() {
+    return lkl_stop_syscall_thread();
+}

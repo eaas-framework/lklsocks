@@ -11,6 +11,7 @@
 
 #include "src/asio/stream_socket_service.hpp"
 #include "SocksServer.h"
+#include "lkl_helper.h"
 
 namespace asio = boost::asio;
 
@@ -81,6 +82,7 @@ void SocksConnection::start() {
 }
 
 void SocksConnection::handshake() {
+    lkl_thread_start();
     Socks4Request request;
     asio::streambuf userdata;
     asio::read(this->hostSocket, asio::buffer(&request, sizeof(request)));
@@ -120,12 +122,31 @@ void SocksConnection::handshake() {
     // start remote reading thread
     this->remoteThread = std::move(std::thread(std::bind(&SocksConnection::receiveRemote, this)));
     this->receiveHost();
+
+    lkl_thread_stop();
 }
 
 void SocksConnection::receiveRemote() {
+    lkl_thread_start();
     std::array<char, 1500> buf;
     boost::system::error_code ec;
     while (true) {
+        size_t length = this->remoteSocket.read_some(asio::buffer(buf), ec);
+        if (ec == boost::asio::error::eof) {
+            try {
+                this->server.stopConnection(this->shared_from_this());
+            } catch (std::bad_weak_ptr &e) {
+                // ignore this exception: if we cannot call shared_from_this(),
+                // the connection's d'tor is already running (or about to)
+                // and there is no point in stopping the connection again.
+                // shared_from_this() is still, however, the most convenient
+                // way to pass "this" to stopConnection
+            }
+            break;
+        }
+
+        asio::write(this->hostSocket, asio::buffer(buf, length));
+#if 0
         // LKL currently does not support SMP and one pending syscall
         // will block all further syscalls, so don't to blocking reads!
         while (this->remoteSocket.receive(
@@ -148,7 +169,9 @@ void SocksConnection::receiveRemote() {
 
         size_t length = this->remoteSocket.read_some(asio::buffer(buf));
         asio::write(this->hostSocket, asio::buffer(buf, length));
+#endif
     }
+    lkl_thread_stop();
 }
 
 void SocksConnection::receiveHost() {
@@ -166,7 +189,7 @@ void SocksConnection::receiveHost() {
                 // shared_from_this() is still, however, the most convenient
                 // way to pass "this" to stopConnection
             }
-            return;
+            break;
         }
         asio::write(this->remoteSocket, asio::buffer(buf, length));
     }
