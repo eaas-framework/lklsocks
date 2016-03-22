@@ -12,7 +12,7 @@ public:
     SocksServer(unsigned short port, boost::asio::io_service &io_service);
     virtual ~SocksServer();
 
-    void stopConnection(SocksConnection::ptr_t const &conn);
+    void stopConnection(SocksConnection::ptr_t const conn);
 protected:
     boost::asio::io_service &io_service;
     boost::asio::ip::tcp::acceptor acceptor;

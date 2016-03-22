@@ -25,7 +25,7 @@ SocksServer::~SocksServer() {
     }
 }
 
-void SocksServer::stopConnection(SocksConnection::ptr_t const &conn) {
+void SocksServer::stopConnection(SocksConnection::ptr_t const conn) {
     // make sure this is only called from the "main" thread
     this->io_service.post([=]() {
         this->connections.remove(conn);
