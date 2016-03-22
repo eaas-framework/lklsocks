@@ -6,16 +6,12 @@
 
 #include "lkl_helper.h"
 
-struct lkl_netdev *nuse_vif_vde_create(const char *switch_);
-extern struct lkl_dev_net_ops vde_net_ops;
-
 void init_lkl(size_t mem, char const *cmd, char const * const vde_path) {
     int ret = 0;
-    struct lkl_netdev *nd = nuse_vif_vde_create(vde_path);
-    struct lkl_dev_net_ops *nd_ops = &vde_net_ops;
+    struct lkl_netdev *nd = lkl_netdev_vde_create(vde_path);
 
 
-    ret = lkl_netdev_add(nd, nd_ops, 0);
+    ret = lkl_netdev_add(nd, 0);
     if (ret < 0) {
         fprintf(stderr, "LKL: Failed to add network interface: %s\n", lkl_strerror(ret));
         return;
