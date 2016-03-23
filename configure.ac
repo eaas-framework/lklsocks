@@ -12,10 +12,7 @@ AC_PROG_CC
 
 AX_CXX_COMPILE_STDCXX_11()
 
-LIBS="-lpthread -lrt -ldl \
-		 -lrte_pmd_vmxnet3_uio -lrte_timer -lrte_hash \
-		 -lrte_mbuf -lethdev -lrte_eal -lrte_mempool \
-		 -lrte_ring -lrte_pmd_ring -lrte_kvargs"
+LIBS="-lpthread -lrt -ldl"
 
 PKG_CHECK_MODULES([vdeplug], [vdeplug])
 LIBS+=" $vdeplug_LIBS"
