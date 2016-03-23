@@ -12,6 +12,7 @@
 #include "src/asio/stream_socket_service.hpp"
 #include "SocksServer.h"
 #include "lkl_helper.h"
+#include "ScopeGuard.h"
 
 namespace asio = boost::asio;
 
@@ -83,6 +84,10 @@ void SocksConnection::start() {
 
 void SocksConnection::handshake() {
     lkl_thread_start();
+    auto threadGuard = scopeGuard([] {
+        lkl_thread_stop();
+    });
+
     Socks4Request request;
     asio::streambuf userdata;
     asio::read(this->hostSocket, asio::buffer(&request, sizeof(request)));
@@ -122,12 +127,14 @@ void SocksConnection::handshake() {
     // start remote reading thread
     this->remoteThread = std::move(std::thread(std::bind(&SocksConnection::receiveRemote, this)));
     this->receiveHost();
-
-    lkl_thread_stop();
 }
 
 void SocksConnection::receiveRemote() {
     lkl_thread_start();
+    auto threadGuard = scopeGuard([] {
+        lkl_thread_stop();
+    });
+
     std::array<char, 1500> buf;
     boost::system::error_code ec;
     while (true) {
@@ -171,7 +178,6 @@ void SocksConnection::receiveRemote() {
         asio::write(this->hostSocket, asio::buffer(buf, length));
 #endif
     }
-    lkl_thread_stop();
 }
 
 void SocksConnection::receiveHost() {
