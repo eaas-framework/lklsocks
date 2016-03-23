@@ -10,10 +10,23 @@
 namespace asio = boost::asio;
 
 SocksServer::SocksServer(unsigned short port,
-                         asio::io_service &io_service) :
+                         boost::asio::io_service &io_service) :
+        SocksServer(asio::ip::tcp::endpoint(asio::ip::tcp::v4(),
+                                            port),
+                    io_service) {
+}
+
+SocksServer::SocksServer(boost::asio::ip::address const &address,
+                         unsigned short const &port,
+                         boost::asio::io_service &io_service) :
+        SocksServer(asio::ip::tcp::endpoint(address, port),
+                    io_service) {
+}
+
+SocksServer::SocksServer(boost::asio::ip::tcp::endpoint const &endpoint,
+                         boost::asio::io_service &io_service) :
         io_service(io_service),
-        acceptor(io_service, asio::ip::tcp::endpoint(asio::ip::tcp::v4(),
-                                                     port)) {
+        acceptor(io_service, endpoint) {
     this->startAccept();
 }
 

@@ -10,6 +10,9 @@
 class SocksServer {
 public:
     SocksServer(unsigned short port, boost::asio::io_service &io_service);
+    SocksServer(boost::asio::ip::address const &address, unsigned short const &port,
+                boost::asio::io_service &io_service);
+    SocksServer(boost::asio::ip::tcp::endpoint const &endpoint, boost::asio::io_service &io_service);
     virtual ~SocksServer();
 
     void stopConnection(SocksConnection::ptr_t const conn);

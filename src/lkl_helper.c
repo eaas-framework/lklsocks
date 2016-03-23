@@ -6,7 +6,7 @@
 
 #include "lkl_helper.h"
 
-void init_lkl(size_t mem, char const *cmd, char const * const vde_path) {
+void init_lkl(size_t mem, char const *cmd, char const * const vde_path, unsigned int addr, unsigned int netmask) {
     int ret = 0;
     struct lkl_netdev *nd = lkl_netdev_vde_create(vde_path);
 
@@ -27,8 +27,6 @@ void init_lkl(size_t mem, char const *cmd, char const * const vde_path) {
     }
     int ifindex = ret;
 
-    uint32_t addr = inet_addr("10.10.10.1");
-    int netmask = 8;
     ret = lkl_if_set_ipv4(ifindex, addr, netmask);
     if (ret < 0) {
         fprintf(stderr, "LKL: Failed to configure network interface %d: %s\n", ifindex, lkl_strerror(ret));
