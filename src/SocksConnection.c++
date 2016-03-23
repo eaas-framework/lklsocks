@@ -3,6 +3,7 @@
 #include <iostream>
 #include <functional>
 #include <thread>
+#include <mutex>
 #include <cstdint>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
@@ -57,24 +58,34 @@ SocksConnection::SocksConnection(boost::asio::io_service &io_service,
 }
 
 SocksConnection::~SocksConnection() {
-    this->mutex.lock();
-    if (this->remoteSocket.is_open()) {
-        this->remoteSocket.shutdown(asio::ip::tcp::socket::shutdown_both);
-        this->remoteSocket.close();
-    }
-    if (this->hostSocket.is_open()) {
-        this->hostSocket.shutdown(asio::ip::tcp::socket::shutdown_both);
-        this->hostSocket.close();
-    }
-    this->mutex.unlock();
+    try {
+        {
+            std::lock_guard<std::mutex> lock(this->mutex);
 
-    if (this->hostThread.joinable()) {
-        this->hostThread.join();
+            // ignore all errors here, we cannot reasonably recover
+            boost::system::error_code ec;
+
+            if (this->remoteSocket.is_open()) {
+                this->remoteSocket.shutdown(
+                        asio::ip::tcp::socket::shutdown_both, ec);
+                this->remoteSocket.close(ec);
+            }
+            if (this->hostSocket.is_open()) {
+                this->hostSocket.shutdown(asio::ip::tcp::socket::shutdown_both,
+                                          ec);
+                this->hostSocket.close(ec);
+            }
+        }
+
+        if (this->hostThread.joinable()) {
+            this->hostThread.join();
+        }
+        if (this->remoteThread.joinable()) {
+            this->remoteThread.join();
+        }
+    } catch (...) {
+        std::cerr << "An exception occurred in ~SockConnection(). The world may come to an end soon." << std::endl;
     }
-    if (this->remoteThread.joinable()) {
-        this->remoteThread.join();
-    }
-    std::cout << "delete connection" << std::endl;
 }
 
 void SocksConnection::start() {
@@ -88,46 +99,48 @@ void SocksConnection::handshake() {
         lkl_thread_stop();
     });
 
-    Socks4Request request;
-    asio::streambuf userdata;
-    asio::read(this->hostSocket, asio::buffer(&request, sizeof(request)));
-    asio::read_until(this->hostSocket, userdata, "\0");
-    request.destinationPort = ntohs(request.destinationPort);
-    request.destinationAddress = ntohl(request.destinationAddress);
+    try {
+        Socks4Request request;
+        asio::streambuf userdata;
+        asio::read(this->hostSocket, asio::buffer(&request, sizeof(request)));
+        asio::read_until(this->hostSocket, userdata, "\0");
+        request.destinationPort = ntohs(request.destinationPort);
+        request.destinationAddress = ntohl(request.destinationAddress);
 
-    lkl::asio::ip::tcp::socket::endpoint_type endpoint(
-            asio::ip::address_v4(request.destinationAddress),
-            request.destinationPort);
+        lkl::asio::ip::tcp::socket::endpoint_type endpoint(
+                asio::ip::address_v4(request.destinationAddress),
+                request.destinationPort);
 
-    std::cout << "Connecting to " << endpoint << std::endl;
+        std::cout << "Connecting to " << endpoint << std::endl;
 
-    boost::system::error_code ec;
-    this->remoteSocket.connect(endpoint, ec);
-    if (ec) {
-        std::cout << "Connection error: " << ec << std::endl;
-        this->remoteSocket.close();
+        try {
+            this->remoteSocket.connect(endpoint);
+        } catch (boost::system::system_error &e) {
+            std::cerr << "Connection error: " << e.code() << std::endl;
+
+            Socks4Response response { SocksReplyVersion::REPLY_SOCKS4,
+                                      Socks4Reply::FAILED,
+                                      htons(request.destinationPort),
+                                      htonl(request.destinationAddress) };
+            asio::write(this->hostSocket, asio::buffer(&response, sizeof(response)));
+
+            std::cerr << "Connection error to remote site, closing down." << std::endl;
+            throw;
+        }
 
         Socks4Response response { SocksReplyVersion::REPLY_SOCKS4,
-                                  Socks4Reply::FAILED,
+                                  Socks4Reply::SUCCESS,
                                   htons(request.destinationPort),
                                   htonl(request.destinationAddress) };
         asio::write(this->hostSocket, asio::buffer(&response, sizeof(response)));
-        std::cout << "Connection error to remote site, closing down." << std::endl;
+        std::cout << "Connection to remote site successful, start proxying." << std::endl;
+
+        // start remote reading thread
+        this->remoteThread = std::move(std::thread(std::bind(&SocksConnection::receiveRemote, this)));
+        this->receiveHost();
+    } catch (...) {
         this->server.stopConnection(this->shared_from_this());
-
-        return;
     }
-
-    Socks4Response response { SocksReplyVersion::REPLY_SOCKS4,
-                              Socks4Reply::SUCCESS,
-                              htons(request.destinationPort),
-                              htonl(request.destinationAddress) };
-    asio::write(this->hostSocket, asio::buffer(&response, sizeof(response)));
-    std::cout << "Connection to remote site successful, start proxying." << std::endl;
-
-    // start remote reading thread
-    this->remoteThread = std::move(std::thread(std::bind(&SocksConnection::receiveRemote, this)));
-    this->receiveHost();
 }
 
 void SocksConnection::receiveRemote() {
@@ -136,11 +149,14 @@ void SocksConnection::receiveRemote() {
         lkl_thread_stop();
     });
 
+    try {
     std::array<char, 1500> buf;
-    boost::system::error_code ec;
-    while (true) {
-        size_t length = this->remoteSocket.read_some(asio::buffer(buf), ec);
-        if (ec == boost::asio::error::eof) {
+        while (true) {
+            size_t length = this->remoteSocket.read_some(asio::buffer(buf));
+            asio::write(this->hostSocket, asio::buffer(buf, length));
+        }
+    } catch (boost::system::system_error &e) {
+        if (e.code() == boost::asio::error::eof) {
             try {
                 this->server.stopConnection(this->shared_from_this());
             } catch (std::bad_weak_ptr &e) {
@@ -150,10 +166,9 @@ void SocksConnection::receiveRemote() {
                 // shared_from_this() is still, however, the most convenient
                 // way to pass "this" to stopConnection
             }
-            break;
         }
+    }
 
-        asio::write(this->hostSocket, asio::buffer(buf, length));
 #if 0
         // LKL currently does not support SMP and one pending syscall
         // will block all further syscalls, so don't to blocking reads!
@@ -178,15 +193,17 @@ void SocksConnection::receiveRemote() {
         size_t length = this->remoteSocket.read_some(asio::buffer(buf));
         asio::write(this->hostSocket, asio::buffer(buf, length));
 #endif
-    }
 }
 
 void SocksConnection::receiveHost() {
-    std::array<char, 1500> buf;
-    boost::system::error_code ec;
-    while (true) {
-        size_t length = this->hostSocket.read_some(asio::buffer(buf), ec);
-        if (ec == boost::asio::error::eof) {
+    try {
+        std::array<char, 1500> buf;
+        while (true) {
+            size_t length = this->hostSocket.read_some(asio::buffer(buf));
+            asio::write(this->remoteSocket, asio::buffer(buf, length));
+        }
+    } catch (boost::system::system_error &e) {
+        if (e.code() == boost::asio::error::eof) {
             try {
                 this->server.stopConnection(this->shared_from_this());
             } catch (std::bad_weak_ptr &e) {
@@ -196,8 +213,6 @@ void SocksConnection::receiveHost() {
                 // shared_from_this() is still, however, the most convenient
                 // way to pass "this" to stopConnection
             }
-            break;
         }
-        asio::write(this->remoteSocket, asio::buffer(buf, length));
     }
 }
