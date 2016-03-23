@@ -1,6 +1,7 @@
 #include "SocksServer.h"
 
 #include <iostream>
+#include <thread>
 #include <boost/bind.hpp>
 #include <boost/asio/placeholders.hpp>
 
@@ -28,6 +29,9 @@ SocksServer::~SocksServer() {
 void SocksServer::stopConnection(SocksConnection::ptr_t const conn) {
     // make sure this is only called from the "main" thread
     this->io_service.post([=]() {
+        // this sleep is required to "guarantee" that all other pointer
+        // references are out of scope
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
         this->connections.remove(conn);
     });
 }
@@ -43,8 +47,10 @@ void SocksServer::startAccept() {
 
 void SocksServer::handleAccept(SocksConnection::ptr_t connection, boost::system::error_code const &error) {
     if (!error) {
-        this->connections.push_back(connection);
-        connection->start();
+        this->io_service.post([=]() {
+            this->connections.push_back(connection);
+            connection->start();
+        });
     }
     this->startAccept();
 }

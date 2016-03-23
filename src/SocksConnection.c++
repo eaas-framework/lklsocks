@@ -113,7 +113,8 @@ void SocksConnection::handshake() {
                                   htonl(request.destinationAddress) };
         asio::write(this->hostSocket, asio::buffer(&response, sizeof(response)));
         std::cout << "Connection error to remote site, closing down." << std::endl;
-        this->hostSocket.close();
+        this->server.stopConnection(this->shared_from_this());
+
         return;
     }
 
