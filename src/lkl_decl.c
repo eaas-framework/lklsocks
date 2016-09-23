@@ -15,19 +15,19 @@ long lkl_set_errno(long err);
 long lkl_accept4(int fd, struct sockaddr * upeer_sockaddr, int * upeer_addrlen,
                  int flags) {
     return lkl_set_errno(lkl_sys_accept4(
-            fd, (struct __lkl__kernel_sockaddr_storage *)upeer_sockaddr,
+            fd, (struct lkl_sockaddr *)upeer_sockaddr,
             upeer_addrlen, flags));
 }
 
 long lkl_accept(int fd, struct sockaddr * upeer_sockaddr,
                 unsigned int * upeer_addrlen) {
     return lkl_set_errno(lkl_sys_accept(
-            fd, (struct __lkl__kernel_sockaddr_storage *)upeer_sockaddr,
+            fd, (struct lkl_sockaddr *)upeer_sockaddr,
             upeer_addrlen));
 }
 
 long lkl_bind(int fd, const struct sockaddr * umyaddr, int addrlen) {
-    return lkl_set_errno(lkl_sys_bind(fd, (struct __lkl__kernel_sockaddr_storage *)umyaddr,
+    return lkl_set_errno(lkl_sys_bind(fd, (struct lkl_sockaddr *)umyaddr,
                         addrlen));
 }
 
@@ -37,21 +37,21 @@ long lkl_close(unsigned int fd) {
 
 long lkl_connect(int fd, const struct sockaddr * uservaddr, int addrlen) {
     return lkl_set_errno(lkl_sys_connect(fd,
-                           (struct __lkl__kernel_sockaddr_storage *)uservaddr,
+                           (struct lkl_sockaddr *)uservaddr,
                            addrlen));
 }
 
 long lkl_getpeername(int fd, struct sockaddr * usockaddr,
                      unsigned int * usockaddr_len) {
     return lkl_set_errno(lkl_sys_getpeername(
-            fd, (struct __lkl__kernel_sockaddr_storage *)usockaddr,
+            fd, (struct lkl_sockaddr *)usockaddr,
             usockaddr_len));
 }
 
 long lkl_getsockname(int fd, struct sockaddr * usockaddr,
                      unsigned int * usockaddr_len) {
     return lkl_set_errno(lkl_sys_getsockname(
-            fd, (struct __lkl__kernel_sockaddr_storage *)usockaddr,
+            fd, (struct lkl_sockaddr *)usockaddr,
             usockaddr_len));
 }
 
