@@ -9,6 +9,7 @@ lklsocks_SOURCES = src/lklsocks.c++ \
                    src/SocksServer.c++ \
                    src/SocksConnection.c++
 
+lklsocks_CFLAGS = -DCONFIG_AUTO_LKL_POSIX_HOST
 lklsocks_CPPFLAGS = $(BOOST_CPPFLAGS)
 lklsocks_LDFLAGS = $(BOOST_PROGRAM_OPTIONS_LDFLAGS) $(BOOST_ASIO_LDFLAGS) $(BOOST_SYSTEM_LDFLAGS)
 lklsocks_LDADD = $(BOOST_PROGRAM_OPTIONS_LIBS) $(BOOST_ASIO_LIBS) $(BOOST_SYSTEM_LIBS) $(vdeplug_LIBS)
