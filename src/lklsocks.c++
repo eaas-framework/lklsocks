@@ -7,8 +7,6 @@
 
 namespace po = boost::program_options;
 
-static const size_t LKL_MEMORY_SIZE = 10*1024*1024; // 10 MB
-
 
 namespace boost { namespace asio { namespace ip {
 
@@ -69,8 +67,7 @@ std::shared_ptr<po::variables_map> parse_config(int argc, char* argv[]) {
 int main(int argc, char *argv[]) {
     std::shared_ptr<po::variables_map> config = parse_config(argc, argv);
 
-    init_lkl(LKL_MEMORY_SIZE,
-             "",
+    init_lkl("mem=10M",
              config->at("socket").as<std::string>().c_str(),
              htonl(config->at("remotehost").as<boost::asio::ip::address_v4>().to_ulong()),
              config->at("netmask").as<unsigned int>());

@@ -6,7 +6,7 @@
 
 #include "lkl_helper.h"
 
-void init_lkl(size_t mem, char const *cmd, char const * const vde_path, unsigned int addr, unsigned int netmask) {
+void init_lkl(char const *cmd, char const * const vde_path, unsigned int addr, unsigned int netmask) {
     int ret = 0;
     struct lkl_netdev *nd = lkl_netdev_vde_create(vde_path);
 
@@ -18,7 +18,7 @@ void init_lkl(size_t mem, char const *cmd, char const * const vde_path, unsigned
     }
     int netdev_id = ret;
 
-    lkl_start_kernel(&lkl_host_ops, mem, cmd);
+    lkl_start_kernel(&lkl_host_ops, cmd);
 
     ret = lkl_netdev_get_ifindex(netdev_id);
     if (ret < 0) {
@@ -41,12 +41,4 @@ void init_lkl(size_t mem, char const *cmd, char const * const vde_path, unsigned
 
 void halt_lkl() {
     lkl_sys_halt();
-}
-
-int lkl_thread_start() {
-    return lkl_create_syscall_thread();
-}
-
-int lkl_thread_stop() {
-    return lkl_stop_syscall_thread();
 }

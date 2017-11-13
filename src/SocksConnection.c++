@@ -13,7 +13,6 @@
 #include "src/asio/stream_socket_service.hpp"
 #include "SocksServer.h"
 #include "lkl_helper.h"
-#include "ScopeGuard.h"
 
 namespace asio = boost::asio;
 
@@ -94,11 +93,6 @@ void SocksConnection::start() {
 }
 
 void SocksConnection::handshake() {
-    lkl_thread_start();
-    auto threadGuard = scopeGuard([] {
-        lkl_thread_stop();
-    });
-
     try {
         Socks4Request request;
         asio::streambuf userdata;
@@ -144,11 +138,6 @@ void SocksConnection::handshake() {
 }
 
 void SocksConnection::receiveRemote() {
-    lkl_thread_start();
-    auto threadGuard = scopeGuard([] {
-        lkl_thread_stop();
-    });
-
     try {
     std::array<char, 1500> buf;
         while (true) {
