@@ -5,6 +5,7 @@ AC_INIT(lklsocks, 0.1, http://github.com/eaas-framework/lklsocks)
 AC_CONFIG_MACRO_DIR([m4])
 
 AM_INIT_AUTOMAKE([subdir-objects foreign])
+AM_SILENT_RULES([yes])
 
 AC_PROG_LIBTOOL
 AC_PROG_CXX
